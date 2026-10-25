@@ -745,7 +745,13 @@ func (iterator *rIterator) generate() {
 				// Jump to one iteration before next day
 				iterator.hour += ((23 - iterator.hour) / r.interval) * r.interval
 			}
-			for {
+			// Clock residues repeat within one day's worth of interval steps.
+			for attempts := 0; ; attempts++ {
+				if attempts == 24 {
+					r.len = iterator.total
+					iterator.finished = true
+					return
+				}
 				hour, ok := iterator.advanceClock(r.interval, 24, iterator.hour)
 				if !ok {
 					r.len = iterator.total
@@ -764,7 +770,13 @@ func (iterator *rIterator) generate() {
 				// Jump to one iteration before next day
 				iterator.minute += ((1439 - (iterator.hour*60 + iterator.minute)) / r.interval) * r.interval
 			}
-			for {
+			// Clock residues repeat within one day's worth of interval steps.
+			for attempts := 0; ; attempts++ {
+				if attempts == 1440 {
+					r.len = iterator.total
+					iterator.finished = true
+					return
+				}
 				minute, ok := iterator.advanceClock(r.interval, 1440, iterator.hour*60+iterator.minute)
 				if !ok {
 					r.len = iterator.total
@@ -784,7 +796,13 @@ func (iterator *rIterator) generate() {
 				// Jump to one iteration before next day
 				iterator.second += (((86399 - (iterator.hour*3600 + iterator.minute*60 + iterator.second)) / r.interval) * r.interval)
 			}
-			for {
+			// Clock residues repeat within one day's worth of interval steps.
+			for attempts := 0; ; attempts++ {
+				if attempts == 86400 {
+					r.len = iterator.total
+					iterator.finished = true
+					return
+				}
 				second, ok := iterator.advanceClock(r.interval, 86400, iterator.hour*3600+iterator.minute*60+iterator.second)
 				if !ok {
 					r.len = iterator.total
