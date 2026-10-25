@@ -1,0 +1,53 @@
+name: Bug report
+description: A rule gives wrong occurrences, or the library behaves unexpectedly.
+labels: ["bug", "status:triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the library panics, hangs or uses runaway CPU or memory, please report it privately instead, using the security link on the previous page.
+  - type: input
+    id: version
+    attributes:
+      label: rrule-go version
+      placeholder: v1.8.3
+    validations:
+      required: true
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      placeholder: go1.23.4
+    validations:
+      required: true
+  - type: textarea
+    id: rule
+    attributes:
+      label: Rule
+      description: The RRULE string or ROption values, including DTSTART and its time zone.
+      placeholder: |
+        DTSTART;TZID=America/New_York:20260105T090000
+        RRULE:FREQ=MONTHLY;BYDAY=1MO;COUNT=3
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+      description: The occurrences or behaviour you expected. If you checked python-dateutil, say what it returns.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: What you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Code to reproduce
+      description: Optional, if the rule alone doesn't show the problem.
+      render: go

@@ -1,0 +1,17 @@
+name: Documentation problem
+description: Something in the README or the Go doc comments is wrong or unclear.
+labels: ["documentation", "status:triage"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Where
+      description: A link, file, or function name.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong
+    validations:
+      required: true
