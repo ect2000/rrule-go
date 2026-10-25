@@ -33,10 +33,9 @@ Report problems in this repository's issues. Licensed under MIT, as the original
 
 Go library for working with recurrence rules for calendar dates.
 
-[![CI](https://github.com/teambition/rrule-go/actions/workflows/ci.yml/badge.svg)](https://github.com/teambition/rrule-go/actions/workflows/ci.yml)
-[![Codecov](https://codecov.io/gh/teambition/rrule-go/master/main/graph/badge.svg)](https://codecov.io/gh/teambition/rrule-go)
-[![CodeQL](https://github.com/teambition/rrule-go/actions/workflows/codeql.yml/badge.svg)](https://github.com/teambition/rrule-go/actions/workflows/codeql.yml)
-[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/teambition/rrule-go/master/LICENSE)
+[![CI](https://github.com/kentonium3/rrule-go/actions/workflows/ci.yml/badge.svg)](https://github.com/kentonium3/rrule-go/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/kentonium3/rrule-go/actions/workflows/codeql.yml/badge.svg)](https://github.com/kentonium3/rrule-go/actions/workflows/codeql.yml)
+[![License](https://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://github.com/kentonium3/rrule-go/blob/release/LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/teambition/rrule-go.svg)](https://pkg.go.dev/github.com/teambition/rrule-go)
 
 The rrule module offers a complete implementation of the recurrence rules documented in the [iCalendar

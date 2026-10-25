@@ -1,34 +1,30 @@
 name: CI
 on:
   push:
-    branches:
-      - 'master'
+    branches: [release]
+  pull_request:
+    branches: [release]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
-  # Test on various OS with default Go version.
-  tests:
-    name: Test on ${{matrix.os}}
+  test:
+    name: Go ${{ matrix.go }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ['1.18.x', '1.19.x']
-
+        include:
+          - { os: ubuntu-latest, go: '1.16.x' }
+          - { os: ubuntu-latest, go: 'stable' }
+          - { os: macos-latest, go: 'stable' }
+          - { os: windows-latest, go: 'stable' }
     steps:
-    - name: Install Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
-
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 1
-
-    - name: Print Go version
-      run: go version
-
-    - name: Get dependencies
-      run: go get -v -t -d ./...
-
-    - name: Run tests
-      run: go test -v -failfast -tags=test -timeout="3m" -race ./...
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ matrix.go }}
+      - run: go vet ./...
+      - run: go test -race -timeout=10m ./...
