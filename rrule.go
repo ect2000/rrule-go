@@ -466,9 +466,15 @@ func (info *iterInfo) rebuild(year int, month time.Month) {
 					var i int
 					if n < 0 {
 						i = last + (n+1)*7
+						if i < first || i > last {
+							continue
+						}
 						i -= pymod(info.wdaymask[i]-wday, 7)
 					} else {
 						i = first + (n-1)*7
+						if i < first || i > last {
+							continue
+						}
 						i += pymod(7-info.wdaymask[i]+wday, 7)
 					}
 					if first <= i && i <= last {
@@ -482,6 +488,10 @@ func (info *iterInfo) rebuild(year int, month time.Month) {
 		info.eastermask = make([]int, info.yearlen+7)
 		eyday := easter(year).YearDay() - 1
 		for _, offset := range info.rrule.byeaster {
+			// Check before adding: offset may be a machine-int extreme.
+			if offset < -eyday || offset >= len(info.eastermask)-eyday {
+				continue
+			}
 			info.eastermask[eyday+offset] = 1
 		}
 	}
@@ -694,39 +704,40 @@ func (iterator *rIterator) generate() {
 		// Handle frequency and interval
 		fixday := false
 		if r.freq == YEARLY {
-			iterator.year += r.interval
-			if iterator.year > MAXYEAR {
+			if r.interval > MAXYEAR-iterator.year {
 				r.len = iterator.total
 				iterator.finished = true
 				return
 			}
+			iterator.year += r.interval
 			iterator.ii.rebuild(iterator.year, iterator.month)
 		} else if r.freq == MONTHLY {
-			iterator.month += time.Month(r.interval)
-			if iterator.month > 12 {
-				div, mod := divmod(int(iterator.month), 12)
-				iterator.month = time.Month(mod)
-				iterator.year += div
-				if iterator.month == 0 {
-					iterator.month = 12
-					iterator.year--
-				}
-				if iterator.year > MAXYEAR {
-					r.len = iterator.total
-					iterator.finished = true
-					return
-				}
+			if r.interval > (MAXYEAR-iterator.year)*12+12-int(iterator.month) {
+				r.len = iterator.total
+				iterator.finished = true
+				return
 			}
+			months := int(iterator.month) - 1 + r.interval
+			iterator.year += months / 12
+			iterator.month = time.Month(months%12 + 1)
 			iterator.ii.rebuild(iterator.year, iterator.month)
 		} else if r.freq == WEEKLY {
-			if r.wkst > iterator.weekday {
-				iterator.day += -(iterator.weekday + 1 + (6 - r.wkst)) + r.interval*7
-			} else {
-				iterator.day += -(iterator.weekday - r.wkst) + r.interval*7
+			offset := pymod(iterator.weekday-r.wkst, 7)
+			// Bound the interval before multiplying, retaining week alignment.
+			if r.interval > (iterator.daysRemaining()+offset)/7 {
+				r.len = iterator.total
+				iterator.finished = true
+				return
 			}
+			iterator.day += r.interval*7 - offset
 			iterator.weekday = r.wkst
 			fixday = true
 		} else if r.freq == DAILY {
+			if r.interval > iterator.daysRemaining() {
+				r.len = iterator.total
+				iterator.finished = true
+				return
+			}
 			iterator.day += r.interval
 			fixday = true
 		} else if r.freq == HOURLY {
@@ -735,13 +746,14 @@ func (iterator *rIterator) generate() {
 				iterator.hour += ((23 - iterator.hour) / r.interval) * r.interval
 			}
 			for {
-				iterator.hour += r.interval
-				div, mod := divmod(iterator.hour, 24)
-				if div != 0 {
-					iterator.hour = mod
-					iterator.day += div
-					fixday = true
+				hour, ok := iterator.advanceClock(r.interval, 24, iterator.hour)
+				if !ok {
+					r.len = iterator.total
+					iterator.finished = true
+					return
 				}
+				iterator.hour = hour
+				fixday = true
 				if len(r.byhour) == 0 || contains(r.byhour, iterator.hour) {
 					break
 				}
@@ -753,18 +765,14 @@ func (iterator *rIterator) generate() {
 				iterator.minute += ((1439 - (iterator.hour*60 + iterator.minute)) / r.interval) * r.interval
 			}
 			for {
-				iterator.minute += r.interval
-				div, mod := divmod(iterator.minute, 60)
-				if div != 0 {
-					iterator.minute = mod
-					iterator.hour += div
-					div, mod = divmod(iterator.hour, 24)
-					if div != 0 {
-						iterator.hour = mod
-						iterator.day += div
-						fixday = true
-					}
+				minute, ok := iterator.advanceClock(r.interval, 1440, iterator.hour*60+iterator.minute)
+				if !ok {
+					r.len = iterator.total
+					iterator.finished = true
+					return
 				}
+				iterator.hour, iterator.minute = minute/60, minute%60
+				fixday = true
 				if (len(r.byhour) == 0 || contains(r.byhour, iterator.hour)) &&
 					(len(r.byminute) == 0 || contains(r.byminute, iterator.minute)) {
 					break
@@ -777,23 +785,14 @@ func (iterator *rIterator) generate() {
 				iterator.second += (((86399 - (iterator.hour*3600 + iterator.minute*60 + iterator.second)) / r.interval) * r.interval)
 			}
 			for {
-				iterator.second += r.interval
-				div, mod := divmod(iterator.second, 60)
-				if div != 0 {
-					iterator.second = mod
-					iterator.minute += div
-					div, mod = divmod(iterator.minute, 60)
-					if div != 0 {
-						iterator.minute = mod
-						iterator.hour += div
-						div, mod = divmod(iterator.hour, 24)
-						if div != 0 {
-							iterator.hour = mod
-							iterator.day += div
-							fixday = true
-						}
-					}
+				second, ok := iterator.advanceClock(r.interval, 86400, iterator.hour*3600+iterator.minute*60+iterator.second)
+				if !ok {
+					r.len = iterator.total
+					iterator.finished = true
+					return
 				}
+				iterator.hour, iterator.minute, iterator.second = second/3600, second/60%60, second%60
+				fixday = true
 				if (len(r.byhour) == 0 || contains(r.byhour, iterator.hour)) &&
 					(len(r.byminute) == 0 || contains(r.byminute, iterator.minute)) &&
 					(len(r.bysecond) == 0 || contains(r.bysecond, iterator.second)) {
@@ -823,6 +822,29 @@ func (iterator *rIterator) generate() {
 			}
 		}
 	}
+}
+
+// daysRemaining includes any day carry not yet normalized by generate. Use
+// UTC civil dates rather than local elapsed time, so DST does not alter steps.
+// Unix seconds also avoid time.Duration's approximately 292-year limit.
+func (iterator *rIterator) daysRemaining() int {
+	end := time.Date(MAXYEAR+1, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
+	monthStart := time.Date(iterator.year, iterator.month, 1, 0, 0, 0, 0, time.UTC).Unix()
+	return int((end-monthStart)/86400) - iterator.day
+}
+
+// advanceClock bounds each inner BY-filter step before adding the interval.
+// clock may exceed one day after the filtered-day shortcut. All arithmetic
+// after the comparison is bounded by the supported civil calendar horizon,
+// including on 32-bit systems; casting an unbounded interval alone is not safe.
+func (iterator *rIterator) advanceClock(interval, unitsPerDay, clock int) (int, bool) {
+	remaining := int64(iterator.daysRemaining())*int64(unitsPerDay) + int64(unitsPerDay-1-clock)
+	if int64(interval) > remaining {
+		return 0, false
+	}
+	total := int64(clock) + int64(interval)
+	iterator.day += int(total / int64(unitsPerDay))
+	return int(total % int64(unitsPerDay)), true
 }
 
 func (iterator *rIterator) fillDaySetMonotonic(start, end int) {
