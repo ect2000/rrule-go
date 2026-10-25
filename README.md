@@ -1,3 +1,34 @@
+> **This is a maintained fork of [teambition/rrule-go](https://github.com/teambition/rrule-go).**
+> The original project is no longer maintained. This fork keeps the same module path
+> (`github.com/teambition/rrule-go`), the same API and the same Go 1.16 minimum. It adds fixes for
+> inputs the parser accepts but the iterator could not handle.
+
+## What this fork fixes (v1.8.3)
+
+- **Panics on accepted rules.** BYDAY ordinals outside the month, BYEASTER offsets outside the year,
+  and very large INTERVAL values could make the iterator panic with "index out of range". They now
+  either yield no occurrence for the impossible parts or stop safely.
+- **A hang.** HOURLY, MINUTELY and SECONDLY rules whose BYHOUR, BYMINUTE or BYSECOND values can't be
+  reached from DTSTART at the given INTERVAL looped forever. They now finish with no occurrence.
+- **Long scans with UNTIL (UTC only).** When DTSTART is in UTC, a rule that never matches now stops
+  at UNTIL instead of scanning to the year 9999. Other locations behave as before.
+
+Rules that worked before produce the same occurrences. The fixes come with regression tests and a
+fuzz test.
+
+## Using it
+
+Keep importing `github.com/teambition/rrule-go` and point the module at this fork:
+
+```bash
+go mod edit -replace github.com/teambition/rrule-go=github.com/kentonium3/rrule-go@v1.8.3
+go mod tidy
+```
+
+Report problems in this repository's issues. Licensed under MIT, as the original (© Teambition).
+
+---
+
 # rrule-go
 
 Go library for working with recurrence rules for calendar dates.
