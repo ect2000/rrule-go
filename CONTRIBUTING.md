@@ -25,6 +25,6 @@ Security problems (panics, hangs, runaway resource use) go through private repor
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages, for example
   `fix: stop BYSETPOS from skipping the last period`.
-- Open pull requests against the `release` branch.
+- Open pull requests against the `main` branch.
 
 By contributing you agree that your work is released under the MIT license in [LICENSE](LICENSE).
