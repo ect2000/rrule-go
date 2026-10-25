@@ -35,7 +35,7 @@ Go library for working with recurrence rules for calendar dates.
 
 [![CI](https://github.com/kentonium3/rrule-go/actions/workflows/ci.yml/badge.svg)](https://github.com/kentonium3/rrule-go/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/kentonium3/rrule-go/actions/workflows/codeql.yml/badge.svg)](https://github.com/kentonium3/rrule-go/actions/workflows/codeql.yml)
-[![License](https://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://github.com/kentonium3/rrule-go/blob/release/LICENSE)
+[![License](https://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://github.com/kentonium3/rrule-go/blob/main/LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/teambition/rrule-go.svg)](https://pkg.go.dev/github.com/teambition/rrule-go)
 
 The rrule module offers a complete implementation of the recurrence rules documented in the [iCalendar
