@@ -148,6 +148,11 @@ func NewRRule(arg ROption) (*RRule, error) {
 func buildRRule(arg ROption) RRule {
 	r := RRule{}
 	r.OrigOptions = arg
+	// Time components expand into occurrence candidates, so repeated values
+	// must not consume COUNT or shift a BYSETPOS selection.
+	arg.Byhour = uniqueInts(arg.Byhour)
+	arg.Byminute = uniqueInts(arg.Byminute)
+	arg.Bysecond = uniqueInts(arg.Bysecond)
 	// FREQ default to YEARLY
 	r.freq = arg.Freq
 
@@ -254,6 +259,21 @@ func buildRRule(arg ROption) RRule {
 
 	r.Options = arg
 	return r
+}
+
+func uniqueInts(values []int) []int {
+	if len(values) < 2 {
+		return values
+	}
+	seen := make(map[int]bool, len(values))
+	unique := make([]int, 0, len(values))
+	for _, value := range values {
+		if !seen[value] {
+			seen[value] = true
+			unique = append(unique, value)
+		}
+	}
+	return unique
 }
 
 // validateBounds checks the RRule's options are within the boundaries defined

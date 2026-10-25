@@ -3,9 +3,68 @@
 package rrule
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
+
+func TestRepeatedTimeByValues(t *testing.T) {
+	start := time.Date(2008, 1, 1, 9, 0, 0, 0, time.UTC)
+	for _, tt := range []struct {
+		name       string
+		duplicated string
+		unique     string
+	}{
+		{"hours", "FREQ=DAILY;COUNT=6;BYHOUR=9,9,10", "FREQ=DAILY;COUNT=6;BYHOUR=9,10"},
+		{"minutes", "FREQ=HOURLY;COUNT=6;BYMINUTE=0,0,30", "FREQ=HOURLY;COUNT=6;BYMINUTE=0,30"},
+		{"seconds", "FREQ=MINUTELY;COUNT=12;BYSECOND=0,30,0", "FREQ=MINUTELY;COUNT=12;BYSECOND=0,30"},
+		{"set-position", "FREQ=DAILY;COUNT=6;BYHOUR=9,9,10;BYSETPOS=2", "FREQ=DAILY;COUNT=6;BYHOUR=9,10;BYSETPOS=2"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			parse := func(text string) *RRule {
+				rule, err := StrToRRule(text)
+				if err != nil {
+					t.Fatal(err)
+				}
+				rule.DTStart(start)
+				return rule
+			}
+			got, want := parse(tt.duplicated).All(), parse(tt.unique).All()
+			if !timesEqual(got, want) {
+				t.Fatalf("repeated values change occurrences:\ngot %v\nwant %v", got, want)
+			}
+		})
+	}
+}
+
+func TestRepeatedByValuesInSet(t *testing.T) {
+	set, err := StrToRRuleSet("DTSTART:20080101T090000Z\nRRULE:FREQ=MINUTELY;COUNT=12;BYSECOND=0,30,0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Date(2008, 1, 1, 9, 0, 0, 0, time.UTC)
+	got := set.Between(start, start.Add(10*time.Minute), true)
+	if len(got) != 12 || !got[len(got)-1].Equal(start.Add(5*time.Minute+30*time.Second)) {
+		t.Fatalf("got %v, want 12 occurrences ending at 09:05:30", got)
+	}
+}
+
+func TestRepeatedByValuesKeepCallerOptions(t *testing.T) {
+	hours := []int{10, 9, 10}
+	minutes := []int{30, 0, 30}
+	seconds := []int{30, 0, 30}
+	options := ROption{Freq: DAILY, Count: 3, Dtstart: time.Date(2008, 1, 1, 9, 0, 0, 0, time.UTC),
+		Byhour: hours, Byminute: minutes, Bysecond: seconds}
+	rule, err := NewRRule(options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rule.All()
+	if !reflect.DeepEqual(hours, []int{10, 9, 10}) || !reflect.DeepEqual(minutes, []int{30, 0, 30}) ||
+		!reflect.DeepEqual(seconds, []int{30, 0, 30}) || !reflect.DeepEqual(rule.OrigOptions, options) {
+		t.Fatal("constructing or iterating a rule changed the caller's original options")
+	}
+}
 
 func timesEqual(value, want []time.Time) bool {
 	if len(value) != len(want) {
