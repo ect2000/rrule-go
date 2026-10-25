@@ -591,6 +591,23 @@ func (iterator *rIterator) generate() {
 
 	r := iterator.ii.rrule
 	for iterator.remain.Len() == 0 {
+		// UTC civil midnight bounds every candidate in this period. Other
+		// locations retain the existing path: local midnight may normalize
+		// backwards across a timezone transition.
+		if r.dtstart.Location() == time.UTC {
+			month, day := iterator.month, iterator.day
+			if r.freq == YEARLY {
+				month, day = time.January, 1
+			} else if r.freq == MONTHLY {
+				day = 1
+			}
+			periodStart := time.Date(iterator.year, month, day, 0, 0, 0, 0, time.UTC)
+			if periodStart.After(r.until) {
+				r.len = iterator.total
+				iterator.finished = true
+				return
+			}
+		}
 		// Get dayset with the right frequency
 		setStart, setEnd := iterator.ii.calcDaySet(r.freq, iterator.year, iterator.month, iterator.day)
 		iterator.fillDaySetMonotonic(setStart, setEnd)
